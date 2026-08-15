@@ -26,9 +26,8 @@ export type RuntimePhase = 'pending' | 'loading' | 'active' | 'failed' | 'unload
 export interface InstalledPlugin {
   name: string
   type: PluginType
-  source: string
+  version: string
   sourceUrl?: string
-  installedRef: string
   entryId?: string
   enabled: boolean
   runtimePhase: RuntimePhase

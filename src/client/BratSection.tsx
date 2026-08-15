@@ -46,7 +46,7 @@ export function BratSection({ t }: Props) {
     finally { setChecking(false) }
   }, [])
 
-  useEffect(() => { void reload(); void doCheckUpdates() }, [reload, doCheckUpdates])
+  useEffect(() => { void reload() }, [reload])
 
   useEffect(() => {
     void (async () => {
@@ -222,14 +222,16 @@ export function BratSection({ t }: Props) {
                     <span className={css.tag} data-phase={row.runtimePhase}>{PHASE_LABEL[row.runtimePhase] ?? row.runtimePhase}</span>
                   ) : null}
                   {row.managedByBrat ? <span className={css.tag} data-managed="true">mgmt</span> : null}
-                  {updates[row.name] ? <span className={css.tag} data-update="true">可更新</span> : null}
+                  {updates[row.name] ? <span className={css.tag} data-update="true">可更新 → {updates[row.name]}</span> : null}
                 </div>
                 <div className={css.cardMeta}>
+                  <span>版本 {row.version}</span>
                   {row.sourceUrl !== undefined && row.sourceUrl !== '' ? (
-                    <a className={css.link} href={row.sourceUrl} target="_blank" rel="noopener noreferrer">↗ {row.source}</a>
-                  ) : (
-                    row.source
-                  )}
+                    <>
+                      <span> · </span>
+                      <a className={css.link} href={row.sourceUrl} target="_blank" rel="noopener noreferrer" title={row.sourceUrl}>GitHub ↗</a>
+                    </>
+                  ) : null}
                 </div>
               </div>
               <div className={css.cardActions}>

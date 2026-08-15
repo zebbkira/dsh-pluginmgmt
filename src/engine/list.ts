@@ -18,14 +18,33 @@ function isGitSpec(spec: string): boolean {
   return spec.startsWith('github:') || spec.startsWith('git+') || spec.startsWith('git:') || spec.includes('.git')
 }
 
-function prettySource(spec: string, entryOwner?: string, entryRepo?: string): string {
+/** Derive a github.com URL from a git spec (undefined for npm specs). */
+function gitSpecUrl(spec: string, entryOwner?: string, entryRepo?: string): string | undefined {
   if (entryOwner !== undefined && entryRepo !== undefined) return 'https://github.com/' + entryOwner + '/' + entryRepo
   if (spec.startsWith('github:')) {
     const rest = spec.slice('github:'.length).split('#')[0]
     return 'https://github.com/' + rest.replace(/&.*$/, '')
   }
   if (spec.startsWith('git+')) return spec.slice('git+'.length).replace(/#.*$/, '').replace(/\.git$/, '')
-  return 'npm: ' + spec
+  return undefined
+}
+
+/** The actual installed version (semver for npm, short commit for git). */
+function installedVersion(name: string, spec: string, entry: { ref?: string } | undefined, profileDir: string): string {
+  const dir = resolvePackageDir(name, profileDir)
+  if (dir !== null) {
+    try {
+      const m = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { version?: string }
+      if (typeof m.version === 'string' && m.version !== '') return m.version
+    } catch { /* fall through */ }
+  }
+  if (entry?.ref !== undefined && entry.ref !== '') return entry.ref.slice(0, 7)
+  if (isGitSpec(spec)) {
+    const hash = spec.indexOf('#')
+    if (hash >= 0) return spec.slice(hash + 1).split('&')[0].slice(0, 7)
+    return 'git'
+  }
+  return spec
 }
 
 /** Normalize a repository/homepage value to a clickable github.com URL. */
@@ -82,13 +101,11 @@ export function listPlugins(profileDir: string, runtimeEntries: RuntimeEntry[]):
     }
     if (runtime !== undefined) enabled = runtime.enabled
 
-    const source = prettySource(spec, entry?.owner, entry?.repo)
     rows.push({
       name,
       type,
-      source,
-      sourceUrl: isGitSpec(spec) ? source : githubUrlFromPackage(name, profileDir),
-      installedRef: entry?.ref ?? (isGitSpec(spec) ? 'git' : spec),
+      version: installedVersion(name, spec, entry, profileDir),
+      sourceUrl: isGitSpec(spec) ? gitSpecUrl(spec, entry?.owner, entry?.repo) : githubUrlFromPackage(name, profileDir),
       entryId,
       enabled,
       runtimePhase: runtime?.phase ?? null,

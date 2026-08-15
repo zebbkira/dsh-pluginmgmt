@@ -1,8 +1,11 @@
 /** Orchestration: install / remove / update / toggle / check-updates.
  * Mutations are serialized by an in-process lock (pnpm in one profile dir
  * must not run concurrently). */
+import { execFile } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { MutationResult, ParsedSource } from '../protocol.ts'
-import { getBundleEntryId } from './entry.ts'
+import { getBundleEntryId, resolvePackageDir } from './entry.ts'
 import { profileDir, profilePatchPath } from './paths.ts'
 import { addInsert, removeInsert, toggleDisabled } from './patch.ts'
 import { runPnpm, type PnpmResult } from './pnpm.ts'
@@ -119,7 +122,7 @@ export function updatePlugin(name: string): Promise<MutationResult> {
     }
 
     const before = readProfileManifest(profileDir())
-    const res = await runPnpm(['up', name])
+    const res = await runPnpm(['up', '--latest', name])
     if (res.exitCode !== 0) return { ok: false, error: pnpmError(res) }
     reconcileBundles(before, profileDir())
     if (entry !== undefined) setEntry({ ...entry, updatedAt: Date.now() })
@@ -133,16 +136,70 @@ export function togglePlugin(id: string, enabled: boolean): MutationResult {
   return { ok: true, restartRequired: false, detail: (enabled ? '已启用 ' : '已禁用 ') + id }
 }
 
-/** Map plugin name -> latest commit for git-managed plugins with an update. */
+const PROXY_VARS = ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'all_proxy']
+
+function isGitSpec(spec: string): boolean {
+  return spec.startsWith('github:') || spec.startsWith('git+') || spec.startsWith('git:') || spec.includes('.git')
+}
+
+function installedVersion(packageName: string, dir: string): string | undefined {
+  const pkgDir = resolvePackageDir(packageName, dir)
+  if (pkgDir === null) return undefined
+  try {
+    const m = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8')) as { version?: string }
+    return typeof m.version === 'string' ? m.version : undefined
+  } catch { return undefined }
+}
+
+function latestNpmVersion(packageName: string): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    const env: NodeJS.ProcessEnv = { ...process.env }
+    for (const key of PROXY_VARS) delete env[key]
+    execFile('npm', ['view', packageName, 'version'], { timeout: 30000, shell: process.platform === 'win32', env }, (error, stdout) => {
+      if (error !== null) { resolve(undefined); return }
+      const v = String(stdout).trim().split('\n').pop()?.trim()
+      resolve(v !== undefined && /^[0-9]/.test(v) ? v : undefined)
+    })
+  })
+}
+
+/** Map plugin name -> latest version (npm) or short commit (git) when a newer one exists. */
 export function checkUpdates(): Promise<Record<string, string>> {
   return withLock(async () => {
+    const dir = profileDir()
+    const manifest = readProfileManifest(dir)
+    const deps = manifest.dependencies ?? {}
     const registry = readRegistry()
     const result: Record<string, string> = {}
-    for (const [name, entry] of Object.entries(registry.plugins)) {
-      if (entry.owner === undefined || entry.repo === undefined) continue
-      const latest = await resolveCommit(gitUrl({ host: 'github', owner: entry.owner, repo: entry.repo }), entry.branch)
-      if (latest.commit !== undefined && latest.commit !== entry.ref) result[name] = latest.commit
+
+    const npmNames: string[] = []
+    const gitTasks: Array<Promise<void>> = []
+
+    for (const [name, spec] of Object.entries(deps)) {
+      if (isGitSpec(spec)) {
+        gitTasks.push((async () => {
+          const entry = registry.plugins[name]
+          let owner: string | undefined
+          let repo: string | undefined
+          let branch: string | undefined
+          if (entry !== undefined) { owner = entry.owner; repo = entry.repo; branch = entry.branch }
+          else { const src = parseGithubSource(spec); if (src !== null) { owner = src.owner; repo = src.repo; branch = src.ref } }
+          if (owner === undefined || repo === undefined) return
+          const latest = await resolveCommit(gitUrl({ host: 'github', owner, repo }), branch)
+          if (latest.commit !== undefined && entry !== undefined && latest.commit !== entry.ref) result[name] = latest.commit.slice(0, 7)
+        })())
+      } else {
+        npmNames.push(name)
+      }
     }
+
+    await Promise.all(gitTasks)
+    await Promise.all(npmNames.map(async (name) => {
+      const installed = installedVersion(name, dir)
+      const latest = await latestNpmVersion(name)
+      if (installed !== undefined && latest !== undefined && installed !== latest) result[name] = latest
+    }))
+
     return result
   })
 }

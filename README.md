@@ -7,7 +7,7 @@
 
 - 粘贴 GitHub 仓库链接 → 自动校验（是不是 dsh 插件、bundle 还是纯 cordis、monorepo 子目录）→ 一键安装；
 - 对已装插件做更新 / 删除 / 启用停用；
-- 可选的后台自动更新：定时检查 git 源插件是否有新 commit 并更新，全部完成后左下角浮动窗口提示重启。
+- 可选的后台自动更新：定时检查所有已装插件（npm 源 + git 源）是否有新版本并更新，全部完成后左下角浮动窗口提示重启。
 
 **适合谁**：想从 GitHub 直接安装 / 测试第三方 dsh 插件（尤其未发布到 npm 的 beta 插件）、不想手改 profile 配置文件的 DSH 用户。
 
@@ -18,7 +18,7 @@
 | `plugin_install` | 从 GitHub 链接安装插件（先校验 bundle / 纯 cordis，再 pnpm 安装） |
 | `plugin_list` | 列出 web profile 已装插件（bundle / 纯 cordis / npm，含运行态） |
 | `plugin_remove` | 卸载插件（pnpm rm + 层栈 reconcile + 清理 cordis insert） |
-| `plugin_update` | 更新插件（git 源对比最新 commit 重装；npm 源 pnpm up） |
+| `plugin_update` | 更新插件（git 源对比最新 commit 重装；npm 源 pnpm up --latest） |
 | `plugin_check_updates` | 检查插件是否有新版本（npm 源 + git 源） |
 | `plugin_auto_update` | 立即检查并自动更新所有可更新插件 |
 | `plugin_set_auto_update` | 开启/关闭后台自动更新 |
@@ -47,9 +47,13 @@ dsh plugin --profile web add "github:zebbkira/dsh-pluginmgmt#<ref>"
 
 ### 升级
 
+推荐在设置页「插件管理」里点「更新」按钮（内部用 `pnpm up --latest`）。命令行等价：
+
 ```bash
-dsh plugin --profile web update dsh-pluginmgmt
+dsh plugin --profile web add dsh-pluginmgmt@latest
 ```
+
+> 注意：`dsh plugin --profile web update <名>`（即 `pnpm up`）对精确锁定的版本号（如 `0.1.0`）不会升级，需用上面带 `@latest` 或 `pnpm up --latest` 的形式。
 
 ### 禁用 / 启用
 

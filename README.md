@@ -11,6 +11,18 @@
 
 **适合谁**：想从 GitHub 直接安装 / 测试第三方 dsh 插件（尤其未发布到 npm 的 beta 插件）、不想手改 profile 配置文件的 DSH 用户。
 
+### Tools
+
+| 工具 | 说明 |
+| --- | --- |
+| `plugin_install` | 从 GitHub 链接安装插件（先校验 bundle / 纯 cordis，再 pnpm 安装） |
+| `plugin_list` | 列出 web profile 已装插件（bundle / 纯 cordis / npm，含运行态） |
+| `plugin_remove` | 卸载插件（pnpm rm + 层栈 reconcile + 清理 cordis insert） |
+| `plugin_update` | 更新插件（git 源对比最新 commit 重装；npm 源 pnpm up） |
+| `plugin_check_updates` | 检查插件是否有新版本（npm 源 + git 源） |
+| `plugin_auto_update` | 立即检查并自动更新所有可更新插件 |
+| `plugin_set_auto_update` | 开启/关闭后台自动更新 |
+
 ## Compatibility
 
 - 依赖官方 SDK：`@deepseek-ai/*` `^0.1.0-rc.6`（由 profile 闭包注入，插件 `dependencies` 声明为空）。

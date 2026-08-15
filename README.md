@@ -3,6 +3,8 @@
 
 ## Overview
 
+<img width="782" height="784" alt="image" src="https://github.com/user-attachments/assets/a7a0739c-51ba-4bc3-a79a-b6f880f652a6" />
+
 **解决什么问题**：DeepSeek Harness 的插件默认只能通过 `dsh plugin --profile web add <包>` 命令行安装。dsh-pluginmgmt 在 Web GUI 里加了一个「插件管理」设置页，让你：
 
 - 粘贴 GitHub 仓库链接 → 自动校验（是不是 dsh 插件、bundle 还是纯 cordis、monorepo 子目录）→ 一键安装；

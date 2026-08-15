@@ -1,0 +1,14 @@
+# dsh-pluginmgmt bundle patch: inserts the dual-face plugin row into the web
+# profile roster. Applied as a profile bundle layer (the dsh.bundle.patch
+# manifest field) over dsh-base.
+#
+# The node half (exports ".") runs in the host process (plugin management
+# engine + /api/dsh-pluginmgmt routes + agent tools), and the dsh.client
+# declaration in package.json makes the browser half (exports "./client",
+# served at /plugins/dsh-pluginmgmt/client.js) load in the web GUI settings page.
+#
+# id is the row the user's own cordis.patch.yml toggles (keep it stable);
+# name is the published package name and must match package.json.
+- insert:
+    - id: ui-dsh-pluginmgmt
+      name: 'dsh-pluginmgmt'

@@ -1,9 +1,17 @@
 {
   "name": "dsh-pluginmgmt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Plugin manager for the dsh web GUI: paste a GitHub repo URL, verify it is a dsh plugin (bundle or pure cordis), install, then update / remove / enable / disable across the full lifecycle, with background auto-update.",
   "keywords": ["dsh", "deepseek-harness", "plugin", "plugin-manager", "manager"],
   "author": "zebbkirale",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zebbkira/dsh-pluginmgmt.git"
+  },
+  "homepage": "https://github.com/zebbkira/dsh-pluginmgmt#readme",
+  "bugs": {
+    "url": "https://github.com/zebbkira/dsh-pluginmgmt/issues"
+  },
   "type": "module",
   "engines": {
     "node": "^22.19.0 || >=24.0.0"

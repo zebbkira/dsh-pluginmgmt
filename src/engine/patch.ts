@@ -37,7 +37,7 @@ export function readPatch(path: string): PatchState {
   return state
 }
 
-/** Set (or update) the disabled flag on one entry id; append if absent. */
+/** Set an entry's enabled state (writes disabled: !enabled); appends if absent. */
 export function toggleDisabled(path: string, id: string, enabled: boolean): void {
   const lines = readFileSync(path, 'utf8').split(/\r?\n/)
   for (let i = 0; i < lines.length; i++) {
@@ -47,18 +47,18 @@ export function toggleDisabled(path: string, id: string, enabled: boolean): void
       const l = lines[j]
       if (/^-\s+id:/.test(l) || /^-\s+insert:/.test(l)) break
       if (/^\s*disabled:\s*(true|false)/.test(l)) {
-        lines[j] = l.replace(/^(\s*disabled:\s*)(true|false)/, '$1' + String(enabled))
+        lines[j] = l.replace(/^(\s*disabled:\s*)(true|false)/, '$1' + String(!enabled))
         writeFileSync(path, lines.join('\n'))
         return
       }
     }
-    lines.splice(i + 1, 0, '  disabled: ' + String(enabled))
+    lines.splice(i + 1, 0, '  disabled: ' + String(!enabled))
     writeFileSync(path, lines.join('\n'))
     return
   }
   while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop()
   lines.push('- id: ' + id)
-  lines.push('  disabled: ' + String(enabled))
+  lines.push('  disabled: ' + String(!enabled))
   lines.push('')
   writeFileSync(path, lines.join('\n'))
 }

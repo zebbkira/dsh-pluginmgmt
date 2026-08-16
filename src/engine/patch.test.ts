@@ -12,12 +12,12 @@ afterEach(() => { rmSync(dir, { recursive: true, force: true }) })
 describe('toggleDisabled', () => {
   it('flips an existing disabled flag and preserves the inline comment', () => {
     writeFileSync(p(), '- id: ui-x\n  disabled: false   # note\n')
-    toggleDisabled(p(), 'ui-x', true)
+    toggleDisabled(p(), 'ui-x', false)
     expect(readFileSync(p(), 'utf8')).toContain('disabled: true   # note')
   })
   it('appends a new entry when the id is absent', () => {
     writeFileSync(p(), '- id: ui-other\n  disabled: false\n')
-    toggleDisabled(p(), 'ui-new', true)
+    toggleDisabled(p(), 'ui-new', false)
     const text = readFileSync(p(), 'utf8')
     expect(text).toContain('- id: ui-new')
     expect(text).toContain('disabled: true')

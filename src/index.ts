@@ -21,18 +21,23 @@ const GUIDANCE = '本机已安装 dsh-pluginmgmt 插件（插件管理器）：�
 
 /** Read the current Loader entries (same source as the official inventory). */
 function runtimeEntries(ctx: Context): RuntimeEntry[] {
-  const loader = (ctx as unknown as { loader: { entries(): Array<{ id: string; disabled: boolean; options: { name: string; group?: unknown }; fiber?: { state: number } | null }> } }).loader
-  const entries: RuntimeEntry[] = []
-  for (const entry of loader.entries()) {
-    if (entry.options.group) continue
-    entries.push({
-      entryId: entry.id,
-      moduleName: entry.options.name,
-      enabled: !entry.disabled,
-      phase: entry.fiber ? (FIBER_PHASE[entry.fiber.state] ?? null) : null,
-    })
+  try {
+    const loader = (ctx as unknown as { loader: { entries(): Array<{ id: string; disabled: boolean; options: { name: string; group?: unknown }; fiber?: { state: number } | null }> } }).loader
+    const entries: RuntimeEntry[] = []
+    for (const entry of loader.entries()) {
+      if (entry.options.group) continue
+      entries.push({
+        entryId: entry.id,
+        moduleName: entry.options.name,
+        enabled: !entry.disabled,
+        phase: entry.fiber ? (FIBER_PHASE[entry.fiber.state] ?? null) : null,
+      })
+    }
+    return entries
+  } catch (e) {
+    console.error('[dsh-pluginmgmt] runtimeEntries failed:', e)
+    return []
   }
-  return entries
 }
 
 export function apply(ctx: Context): void {

@@ -132,6 +132,7 @@ export function updatePlugin(name: string): Promise<MutationResult> {
 
 export function togglePlugin(id: string, enabled: boolean): MutationResult {
   if (id === undefined || id === '') return { ok: false, error: '缺少插件入口 id' }
+  if (id === 'ui-dsh-pluginmgmt' && !enabled) return { ok: false, error: '不能禁用 dsh-pluginmgmt 自身（会失去所有管理入口）' }
   toggleDisabled(profilePatchPath(), id, enabled)
   return { ok: true, restartRequired: false, detail: (enabled ? '已启用 ' : '已禁用 ') + id }
 }
